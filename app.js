@@ -5,28 +5,16 @@
    - บันทึกขายออนไลน์ / ขายตลาด
    - สรุปยอดขาย กำไร และกราฟ
    - ส่งข้อมูลเข้า Google Sheet ผ่าน Apps Script
-====================================================== */
-
-
-/* ======================================================
-   1) โหลดข้อมูลจาก localStorage
-   ข้อมูลส่วนนี้จะเก็บไว้ใน Browser ของเครื่องที่ใช้งาน
+   - โหลดข้อมูลล่าสุดจาก Google Sheet อัตโนมัติ
 ====================================================== */
 
 let buys = JSON.parse(localStorage.getItem("toy_buys")) || [];
 let sales = JSON.parse(localStorage.getItem("toy_sales")) || [];
 
-/* เก็บ URL ของ Google Apps Script */
 let GOOGLE_SCRIPT_URL = localStorage.getItem("google_script_url") || "";
 
-/* ตัวแปรกราฟ */
 let saleChart = null;
 let channelChart = null;
-
-
-/* ======================================================
-   2) ตั้งค่าวันที่เริ่มต้นเป็นวันนี้
-====================================================== */
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -34,11 +22,7 @@ document.getElementById("buyDate").value = today;
 document.getElementById("saleDate").value = today;
 document.getElementById("scriptUrlInput").value = GOOGLE_SCRIPT_URL;
 
-
-/* ======================================================
-   3) เปลี่ยนหน้าเมนู
-====================================================== */
-
+/* เปลี่ยนหน้า */
 function showPage(pageId, button) {
   document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
   document.querySelectorAll(".menu button").forEach(btn => btn.classList.remove("active"));
@@ -49,11 +33,7 @@ function showPage(pageId, button) {
   updateAll();
 }
 
-
-/* ======================================================
-   4) ฟังก์ชันช่วยแสดงวันที่แบบไทย วัน/เดือน/ปี
-====================================================== */
-
+/* วันที่ไทย */
 function formatThaiDate(dateString) {
   if (!dateString) return "-";
 
@@ -66,22 +46,16 @@ function formatThaiDate(dateString) {
   });
 }
 
-
-/* ======================================================
-   5) ฟังก์ชันแสดงเงินไทย
-====================================================== */
-
+/* เงินไทย */
 function money(value) {
   return Number(value || 0).toLocaleString("th-TH") + " บาท";
 }
 
-
-/* ======================================================
-   6) แสดงกล่องสถานะ
-====================================================== */
-
+/* สถานะ */
 function showStatus(id, message, type = "ok") {
   const el = document.getElementById(id);
+  if (!el) return;
+
   el.className = "status " + type;
   el.innerText = message;
 
@@ -91,11 +65,7 @@ function showStatus(id, message, type = "ok") {
   }, 3000);
 }
 
-
-/* ======================================================
-   7) บันทึก URL Apps Script
-====================================================== */
-
+/* บันทึก URL */
 function saveScriptUrl() {
   GOOGLE_SCRIPT_URL = document.getElementById("scriptUrlInput").value.trim();
   localStorage.setItem("google_script_url", GOOGLE_SCRIPT_URL);
@@ -103,12 +73,7 @@ function saveScriptUrl() {
   showStatus("settingStatus", "บันทึก URL เรียบร้อย", "ok");
 }
 
-
-/* ======================================================
-   8) ส่งข้อมูลไป Google Sheet
-   ใช้ mode no-cors เพื่อให้ GitHub Pages ส่งข้อมูลไป Apps Script ได้ง่าย
-====================================================== */
-
+/* ส่งข้อมูลไป Google Sheet */
 function sendToGoogleSheet(data) {
   if (!GOOGLE_SCRIPT_URL) {
     console.log("ยังไม่ได้ตั้งค่า Google Apps Script URL");
@@ -124,11 +89,7 @@ function sendToGoogleSheet(data) {
   });
 }
 
-
-/* ======================================================
-   9) ทดสอบส่งข้อมูลเข้า Google Sheet
-====================================================== */
-
+/* ทดสอบส่งข้อมูล */
 function testGoogleSheet() {
   saveScriptUrl();
 
@@ -154,11 +115,7 @@ function testGoogleSheet() {
   showStatus("settingStatus", "ส่งข้อมูลทดสอบแล้ว ให้ไปตรวจใน Google Sheet", "ok");
 }
 
-
-/* ======================================================
-   10) บันทึกซื้อเข้า
-====================================================== */
-
+/* บันทึกซื้อเข้า */
 function addBuy() {
   const date = document.getElementById("buyDate").value;
   const product = document.getElementById("buyProduct").value.trim();
@@ -207,11 +164,7 @@ function addBuy() {
   updateAll();
 }
 
-
-/* ======================================================
-   11) บันทึกขายสินค้า
-====================================================== */
-
+/* บันทึกขาย */
 function addSale() {
   const date = document.getElementById("saleDate").value;
   const channel = document.getElementById("saleChannel").value;
@@ -266,13 +219,7 @@ function addSale() {
   updateAll();
 }
 
-
-/* ======================================================
-   12) ลบข้อมูล
-   หมายเหตุ: ลบเฉพาะในเครื่อง localStorage
-   ถ้าต้องการลบใน Google Sheet ต้องทำระบบ ID เพิ่มเติม
-====================================================== */
-
+/* ลบข้อมูลในเครื่อง */
 function deleteBuy(id) {
   if (!confirm("ลบรายการซื้อเข้านี้ใช่ไหม?")) return;
 
@@ -291,14 +238,17 @@ function deleteSale(id) {
   updateAll();
 }
 
-
-/* ======================================================
-   13) ค้นหาและแสดงตารางประวัติ
-====================================================== */
-
+/* ประวัติ */
 function renderHistory() {
-  const search = document.getElementById("searchText").value.toLowerCase();
-  const filter = document.getElementById("historyFilter").value;
+  const searchEl = document.getElementById("searchText");
+  const filterEl = document.getElementById("historyFilter");
+  const buyTable = document.getElementById("buyTable");
+  const saleTable = document.getElementById("saleTable");
+
+  if (!searchEl || !filterEl || !buyTable || !saleTable) return;
+
+  const search = searchEl.value.toLowerCase();
+  const filter = filterEl.value;
 
   let filteredBuys = buys.filter(item => {
     const text = `${item.product} ${item.category} ${item.note}`.toLowerCase();
@@ -310,20 +260,15 @@ function renderHistory() {
     return text.includes(search);
   });
 
-  if (filter === "buy") {
-    filteredSales = [];
-  }
-
-  if (filter === "sale") {
-    filteredBuys = [];
-  }
+  if (filter === "buy") filteredSales = [];
+  if (filter === "sale") filteredBuys = [];
 
   if (filter === "ขายออนไลน์" || filter === "ขายตลาด") {
     filteredBuys = [];
     filteredSales = filteredSales.filter(item => item.channel === filter);
   }
 
-  document.getElementById("buyTable").innerHTML = `
+  buyTable.innerHTML = `
     <tr>
       <th>วันที่</th>
       <th>สินค้า</th>
@@ -348,7 +293,7 @@ function renderHistory() {
     }
   `;
 
-  document.getElementById("saleTable").innerHTML = `
+  saleTable.innerHTML = `
     <tr>
       <th>วันที่</th>
       <th>ช่องทาง</th>
@@ -382,11 +327,7 @@ function renderHistory() {
   `;
 }
 
-
-/* ======================================================
-   14) สร้างเลขสัปดาห์
-====================================================== */
-
+/* เลขสัปดาห์ */
 function getWeekNumber(dateString) {
   const d = new Date(dateString + "T00:00:00");
   const firstDay = new Date(d.getFullYear(), 0, 1);
@@ -395,11 +336,7 @@ function getWeekNumber(dateString) {
   return Math.ceil((days + firstDay.getDay() + 1) / 7);
 }
 
-
-/* ======================================================
-   15) จัดกลุ่มข้อมูลยอดขายตามสัปดาห์/เดือน
-====================================================== */
-
+/* กลุ่มเวลา */
 function getGroupKey(dateString, mode) {
   const d = new Date(dateString + "T00:00:00");
 
@@ -413,26 +350,54 @@ function getGroupKey(dateString, mode) {
   return "สัปดาห์ " + getWeekNumber(dateString) + "/" + d.getFullYear();
 }
 
-function groupSales(mode) {
+/* รวมข้อมูลกราฟ Dashboard */
+function groupDashboardData(mode) {
   const result = {};
 
   sales.forEach(item => {
     const key = getGroupKey(item.date, mode);
-    result[key] = (result[key] || 0) + item.net;
+
+    if (!result[key]) {
+      result[key] = {
+        sale: 0,
+        cost: 0,
+        fee: 0,
+        profit: 0
+      };
+    }
+
+    result[key].sale += Number(item.net || 0);
+    result[key].fee += Number(item.fee || 0);
+  });
+
+  buys.forEach(item => {
+    const key = getGroupKey(item.date, mode);
+
+    if (!result[key]) {
+      result[key] = {
+        sale: 0,
+        cost: 0,
+        fee: 0,
+        profit: 0
+      };
+    }
+
+    result[key].cost += Number(item.amount || 0);
+  });
+
+  Object.keys(result).forEach(key => {
+    result[key].profit = result[key].sale - result[key].cost - result[key].fee;
   });
 
   return result;
 }
 
-
-/* ======================================================
-   16) อัปเดต Dashboard และกราฟ
-====================================================== */
-
+/* Dashboard */
 function updateDashboard() {
-  const totalBuy = buys.reduce((sum, item) => sum + item.amount, 0);
-  const totalSale = sales.reduce((sum, item) => sum + item.net, 0);
-  const profit = totalSale - totalBuy;
+  const totalBuy = buys.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalSale = sales.reduce((sum, item) => sum + Number(item.net || 0), 0);
+  const totalFee = sales.reduce((sum, item) => sum + Number(item.fee || 0), 0);
+  const profit = totalSale - totalBuy - totalFee;
 
   document.getElementById("dashTotalBuy").innerText = money(totalBuy);
   document.getElementById("dashTotalSale").innerText = money(totalSale);
@@ -440,10 +405,13 @@ function updateDashboard() {
   document.getElementById("dashSaleCount").innerText = sales.length + " รายการ";
 
   const mode = document.getElementById("chartMode").value;
-  const grouped = groupSales(mode);
+  const grouped = groupDashboardData(mode);
 
   const labels = Object.keys(grouped);
-  const values = Object.values(grouped);
+  const saleValues = labels.map(key => grouped[key].sale);
+  const costValues = labels.map(key => grouped[key].cost);
+  const feeValues = labels.map(key => grouped[key].fee);
+  const profitValues = labels.map(key => grouped[key].profit);
 
   if (saleChart) saleChart.destroy();
 
@@ -451,15 +419,40 @@ function updateDashboard() {
     type: "bar",
     data: {
       labels: labels.length ? labels : ["ยังไม่มีข้อมูล"],
-      datasets: [{
-        label: "ยอดขายสุทธิ",
-        data: values.length ? values : [0],
-        borderWidth: 1,
-        borderRadius: 8
-      }]
+      datasets: [
+        {
+          label: "ยอดขายสุทธิ",
+          data: saleValues.length ? saleValues : [0],
+          borderWidth: 1,
+          borderRadius: 8
+        },
+        {
+          label: "ต้นทุนซื้อเข้า",
+          data: costValues.length ? costValues : [0],
+          borderWidth: 1,
+          borderRadius: 8
+        },
+        {
+          label: "ค่าส่ง / ค่าธรรมเนียม",
+          data: feeValues.length ? feeValues : [0],
+          borderWidth: 1,
+          borderRadius: 8
+        },
+        {
+          label: "กำไร",
+          data: profitValues.length ? profitValues : [0],
+          borderWidth: 1,
+          borderRadius: 8
+        }
+      ]
     },
     options: {
       responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        }
+      },
       scales: {
         y: { beginAtZero: true }
       }
@@ -468,11 +461,11 @@ function updateDashboard() {
 
   const onlineTotal = sales
     .filter(item => item.channel === "ขายออนไลน์")
-    .reduce((sum, item) => sum + item.net, 0);
+    .reduce((sum, item) => sum + Number(item.net || 0), 0);
 
   const marketTotal = sales
     .filter(item => item.channel === "ขายตลาด")
-    .reduce((sum, item) => sum + item.net, 0);
+    .reduce((sum, item) => sum + Number(item.net || 0), 0);
 
   if (channelChart) channelChart.destroy();
 
@@ -494,33 +487,84 @@ function updateDashboard() {
       }
     }
   });
+
+  renderMonthlySummary();
 }
 
+/* สรุปรายเดือน ถ้ามีตาราง monthlySummaryTable */
+function renderMonthlySummary() {
+  const table = document.getElementById("monthlySummaryTable");
+  if (!table) return;
 
-/* ======================================================
-   17) Export CSV
-====================================================== */
-/* ======================================================
-   โหลดข้อมูลจาก Google Sheet กลับมาแสดงในเว็บ
-   ใช้สำหรับเปิดเว็บจากมือถือหรือเครื่องใหม่
-====================================================== */
+  const monthly = groupDashboardData("month");
 
-async function loadFromGoogleSheet() {
-  saveScriptUrl();
+  const rows = Object.keys(monthly).map(month => {
+    const data = monthly[month];
+
+    return `
+      <tr>
+        <td>${month}</td>
+        <td>${money(data.sale)}</td>
+        <td>${money(data.cost)}</td>
+        <td>${money(data.fee)}</td>
+        <td>${money(data.profit)}</td>
+        <td>
+          <button class="secondary-small-btn" onclick="openMonthChart('${month}')">
+            ดูกราฟ
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  table.innerHTML = `
+    <tr>
+      <th>เดือน</th>
+      <th>ยอดขาย</th>
+      <th>ต้นทุน</th>
+      <th>ค่าส่ง</th>
+      <th>กำไร</th>
+      <th>ดูข้อมูล</th>
+    </tr>
+    ${
+      rows || `<tr><td colspan="6">ยังไม่มีข้อมูลรายเดือน</td></tr>`
+    }
+  `;
+}
+
+function openMonthChart(monthName) {
+  document.getElementById("chartMode").value = "month";
+  updateDashboard();
+  alert("ดูกราฟของเดือน: " + monthName + "\nสามารถกดชื่อรายการบนกราฟเพื่อเปิด/ปิดแต่ละแท่งได้");
+}
+
+/* โหลดข้อมูลจาก Google Sheet */
+async function loadFromGoogleSheet(showMessage = true) {
+  if (showMessage) {
+    saveScriptUrl();
+  }
 
   if (!GOOGLE_SCRIPT_URL) {
-    showStatus("settingStatus", "กรุณาใส่ URL Apps Script ก่อน", "error");
+    if (showMessage) {
+      showStatus("settingStatus", "กรุณาใส่ URL Apps Script ก่อน", "error");
+    }
+    updateAll();
     return;
   }
 
   try {
-    showStatus("settingStatus", "กำลังโหลดข้อมูลจาก Google Sheet...", "ok");
+    if (showMessage) {
+      showStatus("settingStatus", "กำลังโหลดข้อมูลจาก Google Sheet...", "ok");
+    }
 
     const res = await fetch(GOOGLE_SCRIPT_URL);
     const json = await res.json();
 
     if (json.result !== "success") {
-      showStatus("settingStatus", "โหลดข้อมูลไม่สำเร็จ", "error");
+      if (showMessage) {
+        showStatus("settingStatus", "โหลดข้อมูลไม่สำเร็จ", "error");
+      }
+      updateAll();
       return;
     }
 
@@ -562,19 +606,27 @@ async function loadFromGoogleSheet() {
 
     updateAll();
 
-    showStatus("settingStatus", "โหลดข้อมูลจาก Google Sheet สำเร็จ", "ok");
+    if (showMessage) {
+      showStatus("settingStatus", "โหลดข้อมูลจาก Google Sheet สำเร็จ", "ok");
+    }
 
   } catch (error) {
-    console.error(error);
-    showStatus("settingStatus", "โหลดข้อมูลไม่ได้ กรุณาตรวจ URL หรือ Deploy Apps Script ใหม่", "error");
+    console.error("โหลดข้อมูลไม่ได้:", error);
+
+    if (showMessage) {
+      showStatus("settingStatus", "โหลดข้อมูลไม่ได้ กรุณาตรวจ URL หรือ Deploy Apps Script ใหม่", "error");
+    }
+
+    updateAll();
   }
 }
 
+/* Auto Sync */
+async function autoSyncFromGoogleSheet() {
+  await loadFromGoogleSheet(false);
+}
 
-/* ======================================================
-   แปลงวันที่จาก Google Sheet ให้กลับเป็น yyyy-mm-dd
-====================================================== */
-
+/* แปลงวันที่จาก Sheet */
 function formatSheetDate(value) {
   if (!value) return today;
 
@@ -588,6 +640,8 @@ function formatSheetDate(value) {
   const d = new Date(value);
   return d.toISOString().split("T")[0];
 }
+
+/* Export CSV */
 function exportCSV() {
   const rows = [
     ["id", "date", "type", "channel", "product", "category", "amount", "fee", "net", "note", "createdAt"]
@@ -616,11 +670,7 @@ function exportCSV() {
   a.click();
 }
 
-
-/* ======================================================
-   18) ล้างข้อมูล localStorage
-====================================================== */
-
+/* ล้างข้อมูลในเครื่อง */
 function clearLocalData() {
   if (!confirm("ต้องการล้างข้อมูลในเครื่องทั้งหมดใช่ไหม?")) return;
 
@@ -633,16 +683,16 @@ function clearLocalData() {
   updateAll();
 }
 
-
-/* ======================================================
-   19) อัปเดตทุกส่วนของเว็บ
-====================================================== */
-
+/* อัปเดตทั้งหมด */
 function updateAll() {
   renderHistory();
   updateDashboard();
 }
 
+/* เริ่มต้นระบบ: โหลดข้อมูลล่าสุดอัตโนมัติ */
+autoSyncFromGoogleSheet();
 
-/* เริ่มต้นระบบ */
-updateAll();
+/* โหลดซ้ำอัตโนมัติทุก 1 นาที */
+setInterval(() => {
+  autoSyncFromGoogleSheet();
+}, 60000);
