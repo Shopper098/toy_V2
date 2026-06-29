@@ -22,7 +22,15 @@
     <h1>บัญชีร้านของเล่น</h1>
     <p>ซื้อเข้า · ขายออนไลน์ · ขายตลาด · สรุปกำไร</p>
   </header>
-
+<div class="mobile-nav">
+  <select id="mobileMenu" onchange="changeMobilePage(this.value)">
+    <option value="dashboardPage">🏠 Dashboard</option>
+    <option value="buyPage">💰 ซื้อเข้า</option>
+    <option value="salePage">🛒 ขายสินค้า</option>
+    <option value="historyPage">📄 ประวัติ</option>
+    <option value="settingPage">⚙ ตั้งค่า</option>
+  </select>
+</div>
   <!-- เมนูหลัก -->
   <nav class="menu">
     <button class="active" onclick="showPage('dashboardPage', this)">Dashboard</button>
