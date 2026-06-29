@@ -218,6 +218,23 @@ function addSale() {
 
   updateAll();
 }
+function deleteFromGoogleSheet(id) {
+  if (!GOOGLE_SCRIPT_URL) {
+    console.log("ยังไม่ได้ตั้งค่า Google Apps Script URL");
+    return;
+  }
+
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify({
+      action: "delete",
+      id: id
+    })
+  }).catch(err => {
+    console.error("ลบข้อมูลใน Google Sheet ไม่สำเร็จ", err);
+  });
+}
 
 /* ลบข้อมูลในเครื่อง */
 function deleteBuy(id) {
@@ -225,6 +242,8 @@ function deleteBuy(id) {
 
   buys = buys.filter(item => item.id !== id);
   localStorage.setItem("toy_buys", JSON.stringify(buys));
+
+  deleteFromGoogleSheet(id);
 
   updateAll();
 }
@@ -234,6 +253,8 @@ function deleteSale(id) {
 
   sales = sales.filter(item => item.id !== id);
   localStorage.setItem("toy_sales", JSON.stringify(sales));
+
+  deleteFromGoogleSheet(id);
 
   updateAll();
 }
