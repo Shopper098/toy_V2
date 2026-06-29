@@ -32,7 +32,32 @@ function showPage(pageId, button) {
 
   updateAll();
 }
+function changeMobilePage(pageId) {
+  document.querySelectorAll(".page").forEach(page => {
+    page.classList.remove("active");
+  });
 
+  document.getElementById(pageId).classList.add("active");
+
+  document.querySelectorAll(".menu button").forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  const menuMap = {
+    dashboardPage: 0,
+    buyPage: 1,
+    salePage: 2,
+    historyPage: 3,
+    settingPage: 4
+  };
+
+  const buttons = document.querySelectorAll(".menu button");
+  if (buttons[menuMap[pageId]]) {
+    buttons[menuMap[pageId]].classList.add("active");
+  }
+
+  updateAll();
+}
 /* วันที่ไทย */
 function formatThaiDate(dateString) {
   if (!dateString) return "-";
