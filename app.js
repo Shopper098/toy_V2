@@ -500,7 +500,94 @@ function updateDashboard() {
 /* ======================================================
    17) Export CSV
 ====================================================== */
+/* ======================================================
+   โหลดข้อมูลจาก Google Sheet กลับมาแสดงในเว็บ
+   ใช้สำหรับเปิดเว็บจากมือถือหรือเครื่องใหม่
+====================================================== */
 
+async function loadFromGoogleSheet() {
+  saveScriptUrl();
+
+  if (!GOOGLE_SCRIPT_URL) {
+    showStatus("settingStatus", "กรุณาใส่ URL Apps Script ก่อน", "error");
+    return;
+  }
+
+  try {
+    showStatus("settingStatus", "กำลังโหลดข้อมูลจาก Google Sheet...", "ok");
+
+    const res = await fetch(GOOGLE_SCRIPT_URL);
+    const json = await res.json();
+
+    if (json.result !== "success") {
+      showStatus("settingStatus", "โหลดข้อมูลไม่สำเร็จ", "error");
+      return;
+    }
+
+    const sheetData = json.data || [];
+
+    buys = [];
+    sales = [];
+
+    sheetData.forEach(row => {
+      if (row.type === "ซื้อเข้า") {
+        buys.push({
+          id: Number(row.id) || Date.now(),
+          date: formatSheetDate(row.date),
+          product: row.product || "-",
+          category: row.category || "อื่น ๆ",
+          amount: Number(row.amount || 0),
+          note: row.note || "",
+          createdAt: row.createdAt || new Date().toISOString()
+        });
+      }
+
+      if (row.type === "ขาย") {
+        sales.push({
+          id: Number(row.id) || Date.now(),
+          date: formatSheetDate(row.date),
+          channel: row.channel || "ขายออนไลน์",
+          product: row.product || "-",
+          amount: Number(row.amount || 0),
+          fee: Number(row.fee || 0),
+          net: Number(row.net || row.amount || 0),
+          note: row.note || "",
+          createdAt: row.createdAt || new Date().toISOString()
+        });
+      }
+    });
+
+    localStorage.setItem("toy_buys", JSON.stringify(buys));
+    localStorage.setItem("toy_sales", JSON.stringify(sales));
+
+    updateAll();
+
+    showStatus("settingStatus", "โหลดข้อมูลจาก Google Sheet สำเร็จ", "ok");
+
+  } catch (error) {
+    console.error(error);
+    showStatus("settingStatus", "โหลดข้อมูลไม่ได้ กรุณาตรวจ URL หรือ Deploy Apps Script ใหม่", "error");
+  }
+}
+
+
+/* ======================================================
+   แปลงวันที่จาก Google Sheet ให้กลับเป็น yyyy-mm-dd
+====================================================== */
+
+function formatSheetDate(value) {
+  if (!value) return today;
+
+  if (typeof value === "string") {
+    if (value.includes("T")) {
+      return value.split("T")[0];
+    }
+    return value;
+  }
+
+  const d = new Date(value);
+  return d.toISOString().split("T")[0];
+}
 function exportCSV() {
   const rows = [
     ["id", "date", "type", "channel", "product", "category", "amount", "fee", "net", "note", "createdAt"]
