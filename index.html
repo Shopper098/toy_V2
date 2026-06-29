@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- รองรับมือถือ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>บัญชีร้านของเล่น</title>
+
+  <!-- ไฟล์ CSS หลัก -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Chart.js สำหรับกราฟ -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+  <!-- ส่วนหัวเว็บ -->
+  <header class="app-header">
+    <h1>บัญชีร้านของเล่น</h1>
+    <p>ซื้อเข้า · ขายออนไลน์ · ขายตลาด · สรุปกำไร</p>
+  </header>
+
+  <!-- เมนูหลัก -->
+  <nav class="menu">
+    <button class="active" onclick="showPage('dashboardPage', this)">Dashboard</button>
+    <button onclick="showPage('buyPage', this)">ซื้อเข้า</button>
+    <button onclick="showPage('salePage', this)">ขายสินค้า</button>
+    <button onclick="showPage('historyPage', this)">ประวัติ</button>
+    <button onclick="showPage('settingPage', this)">ตั้งค่า</button>
+  </nav>
+
+  <main class="container">
+
+    <!-- หน้า Dashboard -->
+    <section id="dashboardPage" class="page active">
+      <div class="summary-grid">
+        <div class="summary-card red">
+          <h3>ต้นทุนรวม</h3>
+          <p id="dashTotalBuy">0 บาท</p>
+        </div>
+
+        <div class="summary-card green">
+          <h3>ยอดขายรวม</h3>
+          <p id="dashTotalSale">0 บาท</p>
+        </div>
+
+        <div class="summary-card blue">
+          <h3>กำไร / ขาดทุน</h3>
+          <p id="dashProfit">0 บาท</p>
+        </div>
+
+        <div class="summary-card purple">
+          <h3>จำนวนรายการขาย</h3>
+          <p id="dashSaleCount">0 รายการ</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>กราฟยอดขาย</h2>
+        <select id="chartMode" onchange="updateDashboard()">
+          <option value="week">รายสัปดาห์</option>
+          <option value="month">รายเดือน</option>
+        </select>
+        <canvas id="saleChart"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>ยอดขายแยกตามช่องทาง</h2>
+        <canvas id="channelChart"></canvas>
+      </div>
+    </section>
+
+    <!-- หน้า ซื้อเข้า -->
+    <section id="buyPage" class="page">
+      <div class="card">
+        <h2>บันทึกซื้อของเข้าร้าน</h2>
+
+        <label>วันที่</label>
+        <input type="date" id="buyDate" />
+
+        <label>ชื่อสินค้า / รายการ</label>
+        <input type="text" id="buyProduct" placeholder="เช่น Labubu, โมเดลรถ, ตุ๊กตา" />
+
+        <label>หมวดหมู่</label>
+        <select id="buyCategory">
+          <option value="ของเล่นทั่วไป">ของเล่นทั่วไป</option>
+          <option value="โมเดล">โมเดล</option>
+          <option value="ตุ๊กตา">ตุ๊กตา</option>
+          <option value="Pop Mart">Pop Mart</option>
+          <option value="Gundam">Gundam</option>
+          <option value="อื่น ๆ">อื่น ๆ</option>
+        </select>
+
+        <label>ราคาทุนรวม</label>
+        <input type="number" id="buyAmount" placeholder="เช่น 1500" />
+
+        <label>โน้ต</label>
+        <textarea id="buyNote" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+
+        <button class="primary-btn" onclick="addBuy()">บันทึกซื้อเข้า</button>
+        <div id="buyStatus" class="status"></div>
+      </div>
+    </section>
+
+    <!-- หน้า ขายสินค้า -->
+    <section id="salePage" class="page">
+      <div class="card">
+        <h2>บันทึกการขายสินค้า</h2>
+
+        <label>วันที่</label>
+        <input type="date" id="saleDate" />
+
+        <label>ช่องทางการขาย</label>
+        <select id="saleChannel">
+          <option value="ขายออนไลน์">ขายออนไลน์</option>
+          <option value="ขายตลาด">ขายตลาด</option>
+        </select>
+
+        <label>ชื่อสินค้า / รายการ</label>
+        <input type="text" id="saleProduct" placeholder="เช่น Labubu, Pop Mart, โมเดลรถ" />
+
+        <label>ราคาขาย</label>
+        <input type="number" id="saleAmount" placeholder="เช่น 2500" />
+
+        <label>ค่าจัดส่ง / ค่าธรรมเนียม</label>
+        <input type="number" id="saleFee" placeholder="ถ้าไม่มีใส่ 0" value="0" />
+
+        <label>โน้ต</label>
+        <textarea id="saleNote" placeholder="เช่น ขายผ่าน Facebook, ขายหน้าตลาด"></textarea>
+
+        <button class="primary-btn" onclick="addSale()">บันทึกการขาย</button>
+        <div id="saleStatus" class="status"></div>
+      </div>
+    </section>
+
+    <!-- หน้า ประวัติ -->
+    <section id="historyPage" class="page">
+      <div class="card">
+        <h2>ค้นหาประวัติ</h2>
+
+        <input type="text" id="searchText" placeholder="ค้นหาชื่อสินค้า / โน้ต / ช่องทาง" oninput="renderHistory()" />
+
+        <select id="historyFilter" onchange="renderHistory()">
+          <option value="all">ทั้งหมด</option>
+          <option value="buy">เฉพาะซื้อเข้า</option>
+          <option value="sale">เฉพาะขาย</option>
+          <option value="ขายออนไลน์">ขายออนไลน์</option>
+          <option value="ขายตลาด">ขายตลาด</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <h2>รายการซื้อเข้า</h2>
+        <div class="table-wrap">
+          <table id="buyTable"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>รายการขาย</h2>
+        <div class="table-wrap">
+          <table id="saleTable"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- หน้า ตั้งค่า -->
+    <section id="settingPage" class="page">
+      <div class="card">
+        <h2>ตั้งค่า Google Sheet</h2>
+        <p class="help">
+          วาง URL จาก Google Apps Script ที่ลงท้ายด้วย <b>/exec</b> เพื่อให้ข้อมูลที่บันทึกส่งเข้า Google Sheet
+        </p>
+
+        <label>Google Apps Script URL</label>
+        <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" />
+
+        <button class="primary-btn" onclick="saveScriptUrl()">บันทึก URL</button>
+        <button class="secondary-btn" onclick="testGoogleSheet()">ทดสอบส่งข้อมูล</button>
+
+        <div id="settingStatus" class="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>สำรองข้อมูล</h2>
+        <button class="secondary-btn" onclick="exportCSV()">Export CSV</button>
+        <button class="danger-btn" onclick="clearLocalData()">ล้างข้อมูลในเครื่อง</button>
+      </div>
+
+      <div class="card">
+        <h2>Apps Script สำหรับ Google Sheet</h2>
+        <p class="help">
+          ดูไฟล์ <b>google-apps-script.js</b> ในโปรเจกต์นี้ แล้วนำไปวางใน Apps Script
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ไฟล์ JavaScript หลัก -->
+  <script src="app.js"></script>
+</body>
+</html>
